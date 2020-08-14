@@ -1,0 +1,5 @@
+.idea
+bin
+
+/*.yml
+!/*.example.yml
