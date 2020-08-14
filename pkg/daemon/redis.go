@@ -5,6 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/vanillaverse/guardian/pkg/types"
 	"log"
+	"os"
 )
 
 const (
@@ -14,10 +15,11 @@ const (
 func (d *Daemon) initializeRedis() {
 	opts, err := redis.ParseURL(d.Options.RedisURL)
 	if err != nil {
-		log.Fatalf("failed to parse redis URL (%s): %v", d.Options.RedisURL, err)
+		d.Error("failed to parse redis URL (%s): %v", d.Options.RedisURL, err)
+		os.Exit(1)
 	}
 	d.Redis = redis.NewClient(opts)
-	log.Printf("initialized redis client to %s", opts.Addr)
+	d.Info("initialized redis client to %s", opts.Addr)
 	go d.listenRedis()
 }
 
@@ -35,7 +37,7 @@ func (d *Daemon) listenRedis() {
 		case RedisServerCreate:
 			srv := &types.Server{}
 			_ = json.Unmarshal([]byte(msg.Payload), srv)
-			d.srvManager.Create(srv)
+			_ = d.srvManager.Create(srv)
 		}
 	}
 }

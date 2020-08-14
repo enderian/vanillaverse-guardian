@@ -3,11 +3,11 @@ package server_manager
 import (
 	"github.com/docker/docker/client"
 	"github.com/vanillaverse/guardian/pkg/types"
-	"log"
+	"os"
 )
 
 type ServerManager struct {
-	types.SharedContainer
+	types.GuardianD
 
 	docker *client.Client
 }
@@ -15,10 +15,11 @@ type ServerManager struct {
 func (m *ServerManager) Start() {
 	cli, err := client.NewEnvClient()
 	if err != nil {
-		log.Fatalf("failed to initialize docker: %v", err)
+		m.Error("failed to initialize docker: %v", err)
+		os.Exit(1)
 	}
 
-	log.Printf("initialized docker client")
+	m.Info("initialized docker client")
 	m.docker = cli
 	m.createNetwork()
 }

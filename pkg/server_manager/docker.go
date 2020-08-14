@@ -7,7 +7,6 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/go-connections/nat"
 	"github.com/vanillaverse/guardian/pkg/types"
-	"log"
 )
 
 const (
@@ -18,7 +17,7 @@ const (
 func (m *ServerManager) portMap(server *types.Server) nat.PortMap {
 	_, mp, err := nat.ParsePortSpecs(server.Ports)
 	if err != nil {
-		log.Printf("error while parsing ports for server %v: %v", server.Name, err)
+		m.Error("error while parsing ports for server %v: %v", server.Name, err)
 	}
 	return mp
 }
