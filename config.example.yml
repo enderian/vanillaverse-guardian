@@ -1,0 +1,6 @@
+---
+redis_url: "redis://localhost"
+docker_image_format: "vanillaverse/%s:%s"
+docker_credentials:
+  username: "foo"
+  password: "bar"

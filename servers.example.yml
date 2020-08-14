@@ -1,0 +1,5 @@
+---
+- name: development
+  flavor: survival
+  version: 1.16.1
+  on_host: true
