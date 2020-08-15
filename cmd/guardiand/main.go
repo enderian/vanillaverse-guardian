@@ -13,7 +13,7 @@ func main() {
 	svcConfig := &service.Config{
 		Name:        "guardiand",
 		DisplayName: "guardiand",
-		Description: "The guardin service for VanillaVerse.",
+		Description: "The guardian service for VanillaVerse.",
 	}
 
 	dmn := &daemon.Daemon{}
@@ -39,7 +39,7 @@ func main() {
 
 	app := &cli.App{
 		Name:        "guardiand",
-		Description: "Runs and installs the guardian daemon",
+		Description: "Installs and runs the guardian daemon",
 		Usage:       "guardiand [subcommand] [opts]",
 
 		Flags: runFlags,
