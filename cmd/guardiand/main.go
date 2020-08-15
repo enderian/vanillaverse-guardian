@@ -39,7 +39,7 @@ func main() {
 
 	app := &cli.App{
 		Name:        "guardiand",
-		Description: "Runs and installs the guardian daemon",
+		Description: "Installs and runs the guardian daemon",
 		Usage:       "guardiand [subcommand] [opts]",
 
 		Flags: runFlags,
