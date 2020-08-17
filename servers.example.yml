@@ -1,5 +1,5 @@
 ---
-- name: development
-  flavor: survival
-  version: 1.16.1
-  on_host: true
+- name: test-server
+  flavor: debian
+  version: 10
+  on_host: false

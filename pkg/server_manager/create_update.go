@@ -6,10 +6,10 @@ import (
 	"fmt"
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/vanillaverse/guardian/pkg/types"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func (m *ServerManager) Create(server *types.Server) error {
 		var err error
 		server.ImageID, err = m.pullImage(server)
 		if err != nil {
-			return fmt.Errorf("failed retrieve image for server %s: %v", server.Name, err)
+			return fmt.Errorf("failed while retrieving image: %v", err)
 		}
 	}
 
@@ -31,6 +31,7 @@ func (m *ServerManager) Create(server *types.Server) error {
 	}
 
 	networkMode := container.NetworkMode("host")
+	mounts := []mount.Mount{}
 	endpointsConfig := map[string]*network.EndpointSettings{}
 
 	if !server.OnHost {
@@ -52,8 +53,8 @@ func (m *ServerManager) Create(server *types.Server) error {
 		&container.HostConfig{
 			AutoRemove:   !server.Persist,
 			PortBindings: m.portMap(server),
-			// TODO: Mounts
-			NetworkMode: networkMode,
+			Mounts:       mounts,
+			NetworkMode:  networkMode,
 		},
 		&network.NetworkingConfig{
 			EndpointsConfig: endpointsConfig,
@@ -61,7 +62,7 @@ func (m *ServerManager) Create(server *types.Server) error {
 		server.Name,
 	)
 	if err != nil {
-		return fmt.Errorf("error while creating server %s: %v", server.Name, err)
+		return fmt.Errorf("error while creating container: %v", err)
 	}
 
 	err = m.docker.ContainerStart(
@@ -70,7 +71,7 @@ func (m *ServerManager) Create(server *types.Server) error {
 		dockerTypes.ContainerStartOptions{},
 	)
 	if err != nil {
-		return fmt.Errorf("error while starting server %s: %v", server.Name, err)
+		return fmt.Errorf("error while starting container: %v", err)
 	}
 
 	id := createRes.ID[:12]
@@ -79,7 +80,7 @@ func (m *ServerManager) Create(server *types.Server) error {
 	m.Redis.LPush(context.Background(), m.RedisKey("managed"), id)
 	m.Redis.Set(context.Background(), m.RedisKey("server", server.Name), srvJson, 0)
 
-	log.Printf("started server %s with container ID %s", server.Name, id)
+	m.Info("started server %s with container ID %s", server.Name, id)
 	return nil
 }
 
@@ -91,7 +92,7 @@ func (m *ServerManager) Update(server *types.Server) error {
 	var err error
 	server.ImageID, err = m.pullImage(server)
 	if err != nil {
-		return fmt.Errorf("failed retrieve image for server %s: %v", server.Name, err)
+		return fmt.Errorf("failed while retrieving image: %v", err)
 	}
 
 	// Determine if server requires update
@@ -104,7 +105,7 @@ func (m *ServerManager) Update(server *types.Server) error {
 	duration := 65 * time.Second
 	err = m.docker.ContainerStop(context.Background(), server.Name, &duration)
 	if err != nil {
-		return fmt.Errorf("error while stopping server %s: %v", server.Name, err)
+		return fmt.Errorf("error while stopping container: %v", err)
 	}
 
 	// Attempt to remove container (in non-persistent it should not exist, this is a safeguard)
@@ -116,29 +117,30 @@ func (m *ServerManager) Update(server *types.Server) error {
 
 	// Wrap recreation error
 	if err := m.Create(server); err != nil {
-		return fmt.Errorf("error while recreating server %s: %v", server.Name, err)
+		return fmt.Errorf("error while recreating server: %v", err)
 	}
 
 	return nil
 }
 
 func (m *ServerManager) pullImage(server *types.Server) (string, error) {
+	imgName := fmt.Sprintf(m.Options.Docker.ImageFormat, server.Flavor, server.Version)
 	pull, err := m.docker.ImagePull(
 		context.Background(),
-		fmt.Sprintf(m.Options.DockerImageFormat, server.Flavor, server.Version),
+		imgName,
 		dockerTypes.ImagePullOptions{RegistryAuth: m.credentials()},
 	)
 	if err != nil {
-		return "", fmt.Errorf("error while pulling image for server %s: %v", server.Name, err)
+		return "", err
 	}
 
-	m.Info("pulling image for server %s", server.Name)
+	m.Info("pulling image for server %s: %s", server.Name, imgName)
 	_, _ = ioutil.ReadAll(pull)
 	_ = pull.Close()
 
-	img, _, err := m.docker.ImageInspectWithRaw(context.Background(), server.Name)
+	img, _, err := m.docker.ImageInspectWithRaw(context.Background(), imgName)
 	if err != nil {
-		return "", fmt.Errorf("error while inspecting image for server %s: %v", server.Name, err)
+		return "", err
 	}
 
 	return img.ID, nil

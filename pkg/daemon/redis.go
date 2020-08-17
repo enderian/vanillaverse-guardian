@@ -20,9 +20,9 @@ func (d *Daemon) initializeRedis() {
 	}
 	d.Redis = redis.NewClient(opts)
 	d.Info("initialized redis client to %s", opts.Addr)
-	go d.listenRedis()
 }
 
+// TODO Replace me with Kafka
 func (d *Daemon) listenRedis() {
 	ps := d.RedisSubscribe(RedisServerCreate)
 	_, err := ps.Receive(d.ctx)
@@ -37,7 +37,7 @@ func (d *Daemon) listenRedis() {
 		case RedisServerCreate:
 			srv := &types.Server{}
 			_ = json.Unmarshal([]byte(msg.Payload), srv)
-			_ = d.srvManager.Create(srv)
+			go d.srvManager.Create(srv)
 		}
 	}
 }

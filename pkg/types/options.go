@@ -6,14 +6,21 @@ import (
 	"log"
 )
 
+type dockerOptions struct {
+	Host       string `json:"host"`
+	VerifyHost bool   `json:"verify_host"`
+
+	ImageFormat string            `json:"image_format"`
+	Credentials map[string]string `json:"credentials"`
+}
+
 type Options struct {
 	ConfigFile  string
 	ServersFile string
+	UnixSocket  string
 
-	RedisURL string `json:"redis_url"`
-
-	DockerImageFormat string            `json:"docker_image_format"`
-	DockerCredentials map[string]string `json:"docker_credentials"`
+	RedisURL string        `json:"redis_url"`
+	Docker   dockerOptions `json:"docker"`
 }
 
 func (o *Options) ReadFromFiles() {

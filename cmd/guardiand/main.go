@@ -9,6 +9,28 @@ import (
 	"os"
 )
 
+var baseFolder = "."
+var runFlags = []cli.Flag{
+	&cli.StringFlag{
+		Name:      "config-file",
+		Usage:     "--config-file [config file path]",
+		TakesFile: true,
+		Value:     baseFolder + "/config.yml",
+	},
+	&cli.StringFlag{
+		Name:      "servers-file",
+		Usage:     "--servers-file [servers file path]",
+		TakesFile: true,
+		Value:     baseFolder + "/servers.yml",
+	},
+	&cli.StringFlag{
+		Name:      "socket",
+		Usage:     "--socket [unix socket address]",
+		TakesFile: true,
+		Value:     baseFolder + "/unix.sock",
+	},
+}
+
 func main() {
 	svcConfig := &service.Config{
 		Name:        "guardiand",
@@ -20,21 +42,6 @@ func main() {
 	srv, err := service.New(dmn, svcConfig)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	runFlags := []cli.Flag{
-		&cli.StringFlag{
-			Name:      "config-file",
-			Usage:     "--config-file [config file path]",
-			TakesFile: true,
-			Value:     "./config.yml",
-		},
-		&cli.StringFlag{
-			Name:      "servers-file",
-			Usage:     "--servers-file [servers file path]",
-			TakesFile: true,
-			Value:     "./servers.yml",
-		},
 	}
 
 	app := &cli.App{
@@ -49,72 +56,47 @@ func main() {
 				Flags: runFlags,
 				Action: func(context *cli.Context) error {
 					svcConfig.Arguments = os.Args[2:]
-					err := srv.Install()
-					if err != nil {
-						log.Printf("error while installing guardiand: %v", err)
-					}
-					return err
+					return srv.Install()
 				},
 			},
 			{
 				Name: "uninstall",
 				Action: func(context *cli.Context) error {
-					svcConfig.Arguments = os.Args[2:]
-					err := srv.Uninstall()
-					if err != nil {
-						log.Printf("error while uninstalling guardiand: %v", err)
-					}
-					return err
+					return srv.Uninstall()
 				},
 			},
 			{
 				Name: "start",
 				Action: func(context *cli.Context) error {
-					svcConfig.Arguments = os.Args[2:]
-					err := srv.Start()
-					if err != nil {
-						log.Printf("error while starting guardiand: %v", err)
-					}
-					return err
+					return srv.Start()
 				},
 			},
 			{
 				Name: "stop",
 				Action: func(context *cli.Context) error {
-					svcConfig.Arguments = os.Args[2:]
-					err := srv.Stop()
-					if err != nil {
-						log.Printf("error while stopping guardiand: %v", err)
-					}
-					return err
+					return srv.Stop()
 				},
 			},
 			{
 				Name: "restart",
 				Action: func(context *cli.Context) error {
-					svcConfig.Arguments = os.Args[2:]
-					err := srv.Restart()
-					if err != nil {
-						log.Printf("error while restarting guardiand: %v", err)
-					}
-					return err
+					return srv.Restart()
 				},
 			},
 		},
-
 		Action: func(context *cli.Context) error {
 			dmn.Options = &types.Options{
 				ConfigFile:  context.String("config-file"),
 				ServersFile: context.String("servers-file"),
+				UnixSocket:  context.String("socket"),
 			}
 
 			err := srv.Run()
-			if err != nil {
-				log.Printf("error while running guardiand: %v", err)
-			}
 			return err
 		},
 	}
 
-	_ = app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		log.Printf("error occured: %v", err)
+	}
 }

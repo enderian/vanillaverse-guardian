@@ -21,8 +21,11 @@ func (m *ServerManager) PopulateServers() {
 	}
 
 	for _, srv := range servers {
-		if err := m.Create(srv); err != nil {
-			m.Error("failed while provisioning %s: %v", srv.Name, err)
-		}
+		srv := srv
+		go func() {
+			if err := m.Create(srv); err != nil {
+				m.Error("failed while provisioning %s: %v", srv.Name, err)
+			}
+		}()
 	}
 }
