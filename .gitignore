@@ -2,4 +2,5 @@
 bin
 
 /*.yml
+!/docker-compose.yml
 !/*.example.yml
